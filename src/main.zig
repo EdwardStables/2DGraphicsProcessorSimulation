@@ -2,6 +2,7 @@ const std = @import("std");
 
 const component_manager = @import("backend_manager.zig");
 const component_store = @import("object_store.zig");
+const component_coallesce = @import("coallesce.zig");
 
 const types = @import("backend_types.zig");
 
@@ -9,12 +10,18 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
+    //Component Instantiation
+
     var manager = component_manager.Manager.init();
     defer manager.deinit();
 
     var store = component_store.ObjectStore.init(gpa.allocator());
     defer store.deinit();
-    try store.initialiseData(); //Simple premade geometry
+
+    var coallesce = component_coallesce.Coallesce.init();
+    defer coallesce.deinit();
+
+    //Pipeline simulation
 
     var manager_output = std.ArrayList(types.ManagerToStore).init(gpa.allocator());
     defer manager_output.deinit();
@@ -27,6 +34,14 @@ pub fn main() !void {
     for (try manager_output.toOwnedSlice()) |kick| {
         while (store.runBackend(kick)) |object_attrs| {
             try store_output.append(object_attrs);
+        }
+    }
+
+    var coallesce_output = std.ArrayList(types.CoallesceToColour).init(gpa.allocator());
+    defer coallesce_output.deinit();
+    for (try store_output.toOwnedSlice()) |object| {
+        while (coallesce.run(object)) |pixel| {
+            try coallesce_output.append(pixel);
         }
     }
 }
