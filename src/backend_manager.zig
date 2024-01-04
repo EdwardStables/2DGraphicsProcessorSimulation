@@ -8,6 +8,9 @@ pub const Manager = struct {
     pub fn init() Manager {
         return Manager{};
     }
+    pub fn deinit(_: *Manager) void {
+
+    }
 
     pub fn run(self: *Manager) ?types.ManagerToStore {
         if (self.kicks_to_send == 0){ return null; }
