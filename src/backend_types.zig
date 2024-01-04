@@ -1,10 +1,9 @@
 pub const ChildAction = enum { none, replace, combine, cut };
 
-//TODO x/y can be signed
 pub const Object = struct {
     object_id: u8,
-    x: u10,
-    y: u10,
+    x: i10,
+    y: i10,
     width: u10,
     height: u10,
     depth: u4 = 0,

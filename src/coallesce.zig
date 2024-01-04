@@ -35,12 +35,12 @@ pub const Coallesce = struct {
             //update next pos
 
             //general case is next pixel along row
-            var provisional_x = self.next_x + 1;
-            var provisional_y = self.next_y;
+            var provisional_x: u10 = self.next_x + 1;
+            var provisional_y: u10 = self.next_y;
 
             //testing x OOB
             if (provisional_x >= object.object.width or //iteration beyond edge of object
-                provisional_x + object.object.x >= config.display_width) //iteration in object but off screen
+                @as(i16, provisional_x) + object.object.x >= config.display_width) //iteration in object but off screen
             {
                 provisional_x = self.x_min;
                 provisional_y += 1;
@@ -48,7 +48,7 @@ pub const Coallesce = struct {
 
             //testing y OOB
             if (provisional_y >= object.object.width or //iteration off object
-                provisional_y + object.object.y >= config.display_height) //iteration off bottom of screen
+                @as(i16, provisional_y) + object.object.y >= config.display_height) //iteration off bottom of screen
             {
                 return null;
             }
@@ -59,12 +59,22 @@ pub const Coallesce = struct {
 
         //TODO some kind of check for zero width or height
 
+        const pixel_x = if (object.object.x < 0)
+            self.next_x - @abs(object.object.x)
+        else
+            self.next_x + @abs(object.object.x);
+
+        const pixel_y = if (object.object.y < 0)
+            self.next_y - @abs(object.object.y)
+        else
+            self.next_y + @abs(object.object.y);
+
         const pixel = types.CoallesceToColour{
             .kick_id = object.kick_id,
             .object_id = object.object.object_id,
 
-            .x = self.next_x + object.object.x,
-            .y = self.next_y + object.object.y,
+            .x = pixel_x,
+            .y = pixel_y,
             .depth = object.object.depth,
 
             .r = object.object.colour_r,
@@ -81,9 +91,10 @@ pub const Coallesce = struct {
 
 const expect = std.testing.expect;
 
-test "in range iteration test" {
+const pair = struct { x: u10, y: u10 };
+fn test2x2block(x: i10, y: i10, count: u8, one: pair, two: pair, three: pair, four: pair) !void {
     var coallesce = Coallesce.init();
-    const obj = types.Object{ .object_id = 1, .x = 1, .y = 1, .width = 2, .height = 2 };
+    const obj = types.Object{ .object_id = 1, .x = x, .y = y, .width = 2, .height = 2 };
     const inp = types.StoreToCoallesce{ .kick_id = 1, .object = obj };
 
     var exp = types.CoallesceToColour{
@@ -98,25 +109,39 @@ test "in range iteration test" {
         .a = obj.colour_a,
     };
 
-    const one = coallesce.run(inp).?;
-    exp.x = 1;
-    exp.y = 1;
-    try expect(std.meta.eql(one, exp));
+    var res: types.CoallesceToColour = undefined;
 
-    const two = coallesce.run(inp).?;
-    exp.x = 2;
-    exp.y = 1;
-    try expect(std.meta.eql(two, exp));
+    if (count > 0) {
+        exp.x = one.x;
+        exp.y = one.y;
+        res = coallesce.run(inp).?;
+        try expect(std.meta.eql(res, exp));
+    }
 
-    const three = coallesce.run(inp).?;
-    exp.x = 1;
-    exp.y = 2;
-    try expect(std.meta.eql(three, exp));
+    if (count > 1) {
+        exp.x = two.x;
+        exp.y = two.y;
+        res = coallesce.run(inp).?;
+        try expect(std.meta.eql(res, exp));
+    }
 
-    const four = coallesce.run(inp).?;
-    exp.x = 2;
-    exp.y = 2;
-    try expect(std.meta.eql(four, exp));
+    if (count > 2) {
+        exp.x = three.x;
+        exp.y = three.y;
+        res = coallesce.run(inp).?;
+        try expect(std.meta.eql(res, exp));
+    }
+
+    if (count > 3) {
+        exp.x = four.x;
+        exp.y = four.y;
+        res = coallesce.run(inp).?;
+        try expect(std.meta.eql(res, exp));
+    }
 
     try expect(coallesce.run(inp) == null);
+}
+
+test "in range iteration test" {
+    try test2x2block(1, 1, 4, .{ .x = 1, .y = 1 }, .{ .x = 2, .y = 1 }, .{ .x = 1, .y = 2 }, .{ .x = 2, .y = 2 });
 }
