@@ -16,46 +16,42 @@ pub const Coallesce = struct {
     pub fn deinit(_: *Coallesce) void {}
 
     pub fn run(self: *Coallesce, object: types.StoreToCoallesce) ?types.CoallesceToColour {
+        var provisional_x: u10 = undefined;
+        var provisional_y: u10 = undefined;
+
         if (self.object_id != object.object.object_id) {
             self.object_id = object.object.object_id;
 
-            //TODO: once made signed, if negative this needs to start at a position integer
             self.x_min = if (object.object.x < 0) @abs(object.object.x) else 0;
             self.y_min = if (object.object.y < 0) @abs(object.object.y) else 0;
             self.next_x = self.x_min;
             self.next_y = self.y_min;
 
-            //test for invalid range therefore early return
-            if (object.object.x > config.display_width or
-                object.object.y > config.display_height)
-            {
-                return null;
-            }
+            provisional_x = self.next_x;
+            provisional_y = self.next_y;
         } else {
-            //update next pos
-
             //general case is next pixel along row
-            var provisional_x: u10 = self.next_x + 1;
-            var provisional_y: u10 = self.next_y;
-
-            //testing x OOB
-            if (provisional_x >= object.object.width or //iteration beyond edge of object
-                @as(i16, provisional_x) + object.object.x >= config.display_width) //iteration in object but off screen
-            {
-                provisional_x = self.x_min;
-                provisional_y += 1;
-            }
-
-            //testing y OOB
-            if (provisional_y >= object.object.width or //iteration off object
-                @as(i16, provisional_y) + object.object.y >= config.display_height) //iteration off bottom of screen
-            {
-                return null;
-            }
-
-            self.next_x = provisional_x;
-            self.next_y = provisional_y;
+            provisional_x = self.next_x + 1;
+            provisional_y = self.next_y;
         }
+
+        //testing x OOB
+        if (provisional_x >= object.object.width or //iteration beyond edge of object
+            @as(i16, provisional_x) + object.object.x >= config.display_width) //iteration in object but off screen
+        {
+            provisional_x = self.x_min;
+            provisional_y += 1;
+        }
+
+        //testing y OOB
+        if (provisional_y >= object.object.width or //iteration off object
+            @as(i16, provisional_y) + object.object.y >= config.display_height) //iteration off bottom of screen
+        {
+            return null;
+        }
+
+        self.next_x = provisional_x;
+        self.next_y = provisional_y;
 
         //TODO some kind of check for zero width or height
 
@@ -144,6 +140,11 @@ fn test2x2block(x: i10, y: i10, count: u8, one: pair, two: pair, three: pair, fo
 
 test "in range iteration test" {
     try test2x2block(1, 1, 4, .{ .x = 1, .y = 1 }, .{ .x = 2, .y = 1 }, .{ .x = 1, .y = 2 }, .{ .x = 2, .y = 2 });
+}
+
+test "out of range iteration test" {
+    try test2x2block(-5, -5, 0, .{}, .{}, .{}, .{});
+    try test2x2block(config.display_width + 10, config.display_height + 10, 0, .{}, .{}, .{}, .{});
 }
 
 test "left out of range test" {
