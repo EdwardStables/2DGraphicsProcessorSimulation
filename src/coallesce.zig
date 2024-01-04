@@ -149,3 +149,17 @@ test "in range iteration test" {
 test "left out of range test" {
     try test2x2block(-1, 1, 2, .{ .x = 0, .y = 1 }, .{ .x = 0, .y = 2 }, .{}, .{});
 }
+
+test "right side out of range test" {
+    const w = config.display_width - 1;
+    try test2x2block(w, 1, 2, .{ .x = w, .y = 1 }, .{ .x = w, .y = 2 }, .{}, .{});
+}
+
+test "top side out of range test" {
+    try test2x2block(3, -1, 2, .{ .x = 3, .y = 0 }, .{ .x = 4, .y = 0 }, .{}, .{});
+}
+
+test "bottom side out of range test" {
+    const h = config.display_height - 1;
+    try test2x2block(3, h, 2, .{ .x = 3, .y = h }, .{ .x = 4, .y = h }, .{}, .{});
+}
