@@ -163,3 +163,23 @@ test "bottom side out of range test" {
     const h = config.display_height - 1;
     try test2x2block(3, h, 2, .{ .x = 3, .y = h }, .{ .x = 4, .y = h }, .{}, .{});
 }
+
+test "top left corner" {
+    try test2x2block(-1, -1, 1, .{ .x = 0, .y = 0 }, .{}, .{}, .{});
+}
+
+test "top right corner" {
+    const w = config.display_width - 1;
+    try test2x2block(w, -1, 1, .{ .x = w, .y = 0 }, .{}, .{}, .{});
+}
+
+test "bottom left corner" {
+    const h = config.display_height - 1;
+    try test2x2block(-1, h, 1, .{ .x = 0, .y = h }, .{}, .{}, .{});
+}
+
+test "bottom right corner" {
+    const w = config.display_width - 1;
+    const h = config.display_height - 1;
+    try test2x2block(w, h, 1, .{ .x = w, .y = h }, .{}, .{}, .{});
+}
