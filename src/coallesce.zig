@@ -20,8 +20,8 @@ pub const Coallesce = struct {
             self.object_id = object.object.object_id;
 
             //TODO: once made signed, if negative this needs to start at a position integer
-            self.x_min = 0;
-            self.y_min = 0;
+            self.x_min = if (object.object.x < 0) @abs(object.object.x) else 0;
+            self.y_min = if (object.object.y < 0) @abs(object.object.y) else 0;
             self.next_x = self.x_min;
             self.next_y = self.y_min;
 
@@ -91,7 +91,7 @@ pub const Coallesce = struct {
 
 const expect = std.testing.expect;
 
-const pair = struct { x: u10, y: u10 };
+const pair = struct { x: u10 = 0, y: u10 = 0 };
 fn test2x2block(x: i10, y: i10, count: u8, one: pair, two: pair, three: pair, four: pair) !void {
     var coallesce = Coallesce.init();
     const obj = types.Object{ .object_id = 1, .x = x, .y = y, .width = 2, .height = 2 };
@@ -144,4 +144,8 @@ fn test2x2block(x: i10, y: i10, count: u8, one: pair, two: pair, three: pair, fo
 
 test "in range iteration test" {
     try test2x2block(1, 1, 4, .{ .x = 1, .y = 1 }, .{ .x = 2, .y = 1 }, .{ .x = 1, .y = 2 }, .{ .x = 2, .y = 2 });
+}
+
+test "left out of range test" {
+    try test2x2block(-1, 1, 2, .{ .x = 0, .y = 1 }, .{ .x = 0, .y = 2 }, .{}, .{});
 }
