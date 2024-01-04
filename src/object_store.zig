@@ -20,14 +20,6 @@ pub const ObjectStore = struct {
         self.objects.deinit();
     }
 
-    //Load a premade set of blocks into the store
-    //TODO: A better system of loading for testing once more features implemented
-    pub fn initialiseData(self: *ObjectStore) !void {
-        const obj = types.Object{ .x = 10, .y = 10, .width = 100, .height = 100 };
-
-        try self.objects.append(obj);
-    }
-
     pub fn addObject(self: *ObjectStore, object: types.Object) !void {
         try self.objects.append(object);
     }
@@ -61,7 +53,7 @@ const ta = std.testing.allocator;
 test "simple store test" {
     var store = ObjectStore.init(ta);
     defer store.deinit();
-    const test_obj = types.Object{ .x = 10, .y = 10, .width = 100, .height = 100 };
+    const test_obj = types.Object{ .object_id = 123, .x = 10, .y = 10, .width = 100, .height = 100 };
 
     const kick1 = types.ManagerToStore{ .kick_id = 1 };
     const kick2 = types.ManagerToStore{ .kick_id = 2 };
@@ -70,7 +62,7 @@ test "simple store test" {
     //Even a valid id gets null when store contains no data
     try expect(store.runBackend(kick1) == null);
 
-    try store.initialiseData();
+    try store.addObject(test_obj);
 
     var resp = store.runBackend(kick2).?;
     try expect(resp.kick_id == 2);
@@ -91,9 +83,9 @@ test "multiple objects" {
     var store = ObjectStore.init(ta);
     defer store.deinit();
 
-    const obj1 = types.Object{ .x = 10, .y = 10, .width = 100, .height = 100 };
-    const obj2 = types.Object{ .x = 20, .y = 20, .width = 100, .height = 100 };
-    const obj3 = types.Object{ .x = 30, .y = 30, .width = 100, .height = 100 };
+    const obj1 = types.Object{ .object_id = 123, .x = 10, .y = 10, .width = 100, .height = 100 };
+    const obj2 = types.Object{ .object_id = 124, .x = 20, .y = 20, .width = 100, .height = 100 };
+    const obj3 = types.Object{ .object_id = 125, .x = 30, .y = 30, .width = 100, .height = 100 };
 
     const kick = types.ManagerToStore{ .kick_id = 1 };
 
