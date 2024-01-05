@@ -51,7 +51,7 @@ pub const DepthBuffer = struct {
         const ind = DepthBuffer.get_index(pixel.y, pixel.x);
 
         //TODO consider alpha
-        if (pixel.depth >= self.depths[ind]) {
+        if (!pixel.nulled and pixel.depth >= self.depths[ind]) {
             var new_colour: u24 = pixel.b;
             new_colour |= (@as(u24, pixel.g) << 8);
             new_colour |= (@as(u24, pixel.r) << 16);
@@ -106,3 +106,74 @@ test "write one pixel" {
         }
     }
 }
+
+test "multiple writes" {
+    var db = try DepthBuffer.init(ta);
+    defer db.deinit();
+
+    var pixel = types.ColourToDepthBuffer{
+        .kick_id = 3,
+        .object_id = 4,
+        .nulled = false,
+        .barrier = types.Barrier.none,
+        .x = 0,
+        .y = 0,
+        .depth = 0,
+        .r = 0xFF,
+        .g = 0xFF,
+        .b = 0xFF,
+        .a = 0xFF,
+    };
+
+    try expect(try db.run(pixel) == null);
+
+    pixel.barrier = types.Barrier.last;
+    pixel.x = 1;
+
+    var buffer = (try db.run(pixel)).?;
+    defer buffer.deinit();
+    try expect(buffer.kick_id == pixel.kick_id);
+    try expect(buffer.pixels[0] == @as(u24, 0xFFFFFF));
+    try expect(buffer.pixels[1] == @as(u24, 0xFFFFFF));
+
+    for (0..config.display_height) |y| {
+        for (0..config.display_width) |x| {
+            if (y == 0 and x == 0) continue;
+            if (y == 0 and x == 1) continue;
+            try expect(buffer.pixels[DepthBuffer.get_index(y, x)] == 0);
+        }
+    }
+}
+
+test "nulled pixel doesn't write" {
+    var db = try DepthBuffer.init(ta);
+    defer db.deinit();
+
+    const pixel = types.ColourToDepthBuffer{
+        .kick_id = 3,
+        .object_id = 4,
+        .nulled = true,
+        .barrier = types.Barrier.last,
+        .x = 0,
+        .y = 0,
+        .depth = 0,
+        .r = 0xFF,
+        .g = 0xFF,
+        .b = 0xFF,
+        .a = 0xFF,
+    };
+
+    var buffer = (try db.run(pixel)).?;
+    defer buffer.deinit();
+
+    try expect(buffer.kick_id == pixel.kick_id);
+    for (0..config.display_height) |y| {
+        for (0..config.display_width) |x| {
+            try expect(buffer.pixels[DepthBuffer.get_index(y, x)] == 0);
+        }
+    }
+}
+
+test "depth override" {}
+
+test "multiple kicks" {}
