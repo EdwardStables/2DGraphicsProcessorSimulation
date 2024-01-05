@@ -86,4 +86,6 @@ pub const ColourToDepthBuffer = struct {
     a: u8,
 };
 
-pub const DepthBufferToFrameBuffer = struct {};
+pub const DepthBufferToFrameBuffer = struct {
+    pixels: []u32,
+};
