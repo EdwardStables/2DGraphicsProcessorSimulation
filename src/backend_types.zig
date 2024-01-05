@@ -1,4 +1,10 @@
-pub const ChildAction = enum { none, replace, combine, cut };
+pub const ChildAction = enum {
+    none,
+    replace,
+    combine,
+    cut,
+    //stencil - child cuts if smaller than value
+};
 pub const Barrier = enum { none, last };
 
 pub const Object = struct {
@@ -66,10 +72,13 @@ pub const CoallesceToColour = struct {
 pub const ColourToDepthBuffer = struct {
     kick_id: u8,
     object_id: u8,
+
+    nulled: bool, //in case the transaction would be culled, but it's got a non-null barrier so must continue
+    barrier: Barrier,
+
     x: u10,
     y: u10,
     depth: u4,
-    barrier: Barrier,
 
     r: u8,
     g: u8,

@@ -3,6 +3,7 @@ const std = @import("std");
 const component_manager = @import("backend_manager.zig");
 const component_store = @import("object_store.zig");
 const component_coallesce = @import("coallesce.zig");
+const component_colour = @import("colouring.zig");
 
 const types = @import("backend_types.zig");
 
@@ -20,6 +21,9 @@ pub fn main() !void {
 
     var coallesce = component_coallesce.Coallesce.init();
     defer coallesce.deinit();
+
+    var colouring = component_colour.Colouring.init();
+    defer colouring.deinit();
 
     //Pipeline simulation
 
@@ -42,6 +46,14 @@ pub fn main() !void {
     for (try store_output.toOwnedSlice()) |object| {
         while (coallesce.run(object)) |pixel| {
             try coallesce_output.append(pixel);
+        }
+    }
+
+    var colouring_output = std.ArrayList(types.ColourToDepthBuffer).init(gpa.allocator());
+    defer colouring_output.deinit();
+    for (try coallesce_output.toOwnedSlice()) |pixel| {
+        while (colouring.run(pixel)) |colour| {
+            try colouring_output.append(colour);
         }
     }
 }
