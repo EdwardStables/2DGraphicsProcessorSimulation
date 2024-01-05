@@ -80,8 +80,8 @@ test "write one pixel" {
     defer db.deinit();
 
     const pixel = types.ColourToDepthBuffer{
-        .kick_id = 0,
-        .object_id = 0,
+        .kick_id = 3,
+        .object_id = 4,
         .nulled = false,
         .barrier = types.Barrier.last,
         .x = 0,
@@ -96,5 +96,13 @@ test "write one pixel" {
     var buffer = (try db.run(pixel)).?;
     defer buffer.deinit();
 
+    try expect(buffer.kick_id == pixel.kick_id);
     try expect(buffer.pixels[0] == @as(u24, 0xFFFFFF));
+
+    for (0..config.display_height) |y| {
+        for (0..config.display_width) |x| {
+            if (y == 0 and x == 0) continue;
+            try expect(buffer.pixels[DepthBuffer.get_index(y, x)] == 0);
+        }
+    }
 }
