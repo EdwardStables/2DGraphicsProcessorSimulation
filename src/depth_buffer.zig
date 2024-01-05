@@ -52,16 +52,18 @@ pub const DepthBuffer = struct {
 
         //TODO consider alpha
         if (pixel.depth >= self.depths[ind]) {
-            var new_colour: u32 = pixel.b;
-            new_colour |= (pixel.g << 8);
-            new_colour |= (pixel.r << 16);
+            var new_colour: u24 = pixel.b;
+            new_colour |= (@as(u24, pixel.g) << 8);
+            new_colour |= (@as(u24, pixel.r) << 16);
+            self.pixels[ind] = new_colour;
+            self.depths[ind] = pixel.depth;
         }
 
         if (pixel.barrier != types.Barrier.last) return null;
 
         self.allocate_new = true;
 
-        return types.DepthBufferToFrameBuffer{ .pixels = self.pixels };
+        return types.DepthBufferToFrameBuffer{ .kick_id = pixel.kick_id, .pixels = self.pixels, .allocator = self.allocator };
     }
 };
 
@@ -71,4 +73,28 @@ const ta = std.testing.allocator;
 test "idle cleanup" {
     var db = try DepthBuffer.init(ta);
     defer db.deinit();
+}
+
+test "write one pixel" {
+    var db = try DepthBuffer.init(ta);
+    defer db.deinit();
+
+    const pixel = types.ColourToDepthBuffer{
+        .kick_id = 0,
+        .object_id = 0,
+        .nulled = false,
+        .barrier = types.Barrier.last,
+        .x = 0,
+        .y = 0,
+        .depth = 0,
+        .r = 0xFF,
+        .g = 0xFF,
+        .b = 0xFF,
+        .a = 0xFF,
+    };
+
+    var buffer = (try db.run(pixel)).?;
+    defer buffer.deinit();
+
+    try expect(buffer.pixels[0] == @as(u24, 0xFFFFFF));
 }

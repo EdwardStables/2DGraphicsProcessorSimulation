@@ -1,3 +1,5 @@
+const std = @import("std");
+
 pub const ChildAction = enum {
     none,
     replace,
@@ -87,5 +89,10 @@ pub const ColourToDepthBuffer = struct {
 };
 
 pub const DepthBufferToFrameBuffer = struct {
-    pixels: []u32,
+    kick_id: u8,
+    pixels: []u24,
+    allocator: std.mem.Allocator,
+    pub fn deinit(self: *DepthBufferToFrameBuffer) void {
+        self.allocator.free(self.pixels);
+    }
 };
