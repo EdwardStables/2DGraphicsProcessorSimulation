@@ -8,15 +8,13 @@ pub const DepthBuffer = struct {
     depths: []u4,
     allocate_new: bool,
 
-    pub fn init(allocator: std.mem.Allocator) DepthBuffer {
+    pub fn init(allocator: std.mem.Allocator) !DepthBuffer {
         const db = DepthBuffer{
             .allocator = allocator,
             .pixels = undefined,
-            .depths = allocator.alloc(u4, config.display_height * config.display_width),
+            .depths = try allocator.alloc(u4, config.display_height * config.display_width),
             .allocate_new = true,
         };
-
-        db.zero();
 
         return db;
     }
@@ -43,9 +41,9 @@ pub const DepthBuffer = struct {
         }
     }
 
-    pub fn run(self: *DepthBuffer, pixel: types.ColourToDepthBuffer) ?types.DepthBufferToFrameBuffer {
+    pub fn run(self: *DepthBuffer, pixel: types.ColourToDepthBuffer) !?types.DepthBufferToFrameBuffer {
         if (self.allocate_new) {
-            self.pixels = self.allocator.alloc(u24, config.display_height * config.display_width);
+            self.pixels = try self.allocator.alloc(u24, config.display_height * config.display_width);
             self.zero();
             self.allocate_new = false;
         }
@@ -66,3 +64,11 @@ pub const DepthBuffer = struct {
         return types.DepthBufferToFrameBuffer{ .pixels = self.pixels };
     }
 };
+
+const expect = std.testing.expect;
+const ta = std.testing.allocator;
+
+test "idle cleanup" {
+    var db = try DepthBuffer.init(ta);
+    defer db.deinit();
+}

@@ -4,6 +4,7 @@ const component_manager = @import("backend_manager.zig");
 const component_store = @import("object_store.zig");
 const component_coallesce = @import("coallesce.zig");
 const component_colour = @import("colouring.zig");
+const component_depth_buffer = @import("depth_buffer.zig");
 
 const types = @import("backend_types.zig");
 
@@ -24,6 +25,9 @@ pub fn main() !void {
 
     var colouring = component_colour.Colouring.init();
     defer colouring.deinit();
+
+    var depth_buffer = try component_depth_buffer.DepthBuffer.init(gpa.allocator());
+    defer depth_buffer.deinit();
 
     //Pipeline simulation
 
