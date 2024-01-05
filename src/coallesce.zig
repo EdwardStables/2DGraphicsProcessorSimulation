@@ -2,6 +2,8 @@ const std = @import("std");
 const types = @import("backend_types.zig");
 const config = @import("backend_config.zig");
 
+const Pair = struct { x: u10 = 0, y: u10 = 0 };
+
 pub const Coallesce = struct {
     object_id: u8 = 0,
     x_min: u10 = 0,
@@ -14,6 +16,28 @@ pub const Coallesce = struct {
     }
 
     pub fn deinit(_: *Coallesce) void {}
+
+    fn test_next(self: *Coallesce, provisional_x: u10, provisional_y: u10, object: types.StoreToCoallesce) ?Pair {
+        var x = provisional_x;
+        var y = provisional_y;
+
+        //testing x OOB
+        if (x >= object.object.width or //iteration beyond edge of object
+            @as(i16, x) + object.object.x >= config.display_width) //iteration in object but off screen
+        {
+            x = self.x_min;
+            y += 1;
+        }
+
+        //testing y OOB
+        if (y >= object.object.width or //iteration off object
+            @as(i16, y) + object.object.y >= config.display_height) //iteration off bottom of screen
+        {
+            return null;
+        }
+
+        return .{ .x = x, .y = y };
+    }
 
     pub fn run(self: *Coallesce, object: types.StoreToCoallesce) ?types.CoallesceToColour {
         var provisional_x: u10 = undefined;
@@ -35,23 +59,10 @@ pub const Coallesce = struct {
             provisional_y = self.next_y;
         }
 
-        //testing x OOB
-        if (provisional_x >= object.object.width or //iteration beyond edge of object
-            @as(i16, provisional_x) + object.object.x >= config.display_width) //iteration in object but off screen
-        {
-            provisional_x = self.x_min;
-            provisional_y += 1;
-        }
+        const update = self.test_next(provisional_x, provisional_y, object) orelse return null;
 
-        //testing y OOB
-        if (provisional_y >= object.object.width or //iteration off object
-            @as(i16, provisional_y) + object.object.y >= config.display_height) //iteration off bottom of screen
-        {
-            return null;
-        }
-
-        self.next_x = provisional_x;
-        self.next_y = provisional_y;
+        self.next_x = update.x;
+        self.next_y = update.y;
 
         //TODO some kind of check for zero width or height
 
@@ -65,9 +76,15 @@ pub const Coallesce = struct {
         else
             self.next_y + @abs(object.object.y);
 
+        //Testing the following position to see barrier value
+        const next_query = self.test_next(self.next_x + 1, self.next_y, object);
+        const next_invalid = next_query == null;
+        const last_barrier = next_invalid and object.barrier == types.Barrier.last;
+
         const pixel = types.CoallesceToColour{
             .kick_id = object.kick_id,
             .object_id = object.object.object_id,
+            .barrier = if (last_barrier) types.Barrier.last else types.Barrier.none,
 
             .x = pixel_x,
             .y = pixel_y,
@@ -87,15 +104,19 @@ pub const Coallesce = struct {
 
 const expect = std.testing.expect;
 
-const pair = struct { x: u10 = 0, y: u10 = 0 };
-fn test2x2block(x: i10, y: i10, count: u8, one: pair, two: pair, three: pair, four: pair) !void {
+fn test2x2block(x: i10, y: i10, count: u8, one: Pair, two: Pair, three: Pair, four: Pair) !void {
     var coallesce = Coallesce.init();
     const obj = types.Object{ .object_id = 1, .x = x, .y = y, .width = 2, .height = 2 };
-    const inp = types.StoreToCoallesce{ .kick_id = 1, .object = obj };
+    const inp = types.StoreToCoallesce{
+        .kick_id = 1,
+        .object = obj,
+        .barrier = types.Barrier.none,
+    };
 
     var exp = types.CoallesceToColour{
         .kick_id = inp.kick_id,
         .object_id = obj.object_id,
+        .barrier = types.Barrier.none,
         .x = 0,
         .y = 0,
         .depth = obj.depth,
@@ -183,4 +204,48 @@ test "bottom right corner" {
     const w = config.display_width - 1;
     const h = config.display_height - 1;
     try test2x2block(w, h, 1, .{ .x = w, .y = h }, .{}, .{}, .{});
+}
+
+test "barrier" {
+    var coallesce = Coallesce.init();
+    const obj = types.Object{ .object_id = 1, .x = 0, .y = 0, .width = 2, .height = 2 };
+    const inp = types.StoreToCoallesce{
+        .kick_id = 1,
+        .object = obj,
+        .barrier = types.Barrier.last,
+    };
+
+    var exp = types.CoallesceToColour{
+        .kick_id = inp.kick_id,
+        .object_id = obj.object_id,
+        .barrier = types.Barrier.none,
+        .x = 0,
+        .y = 0,
+        .depth = obj.depth,
+        .r = obj.colour_r,
+        .g = obj.colour_g,
+        .b = obj.colour_b,
+        .a = obj.colour_a,
+    };
+
+    exp.x = 0;
+    exp.y = 0;
+    var res = coallesce.run(inp).?;
+    try expect(std.meta.eql(res, exp));
+
+    exp.x = 1;
+    exp.y = 0;
+    res = coallesce.run(inp).?;
+    try expect(std.meta.eql(res, exp));
+
+    exp.x = 0;
+    exp.y = 1;
+    res = coallesce.run(inp).?;
+    try expect(std.meta.eql(res, exp));
+
+    exp.x = 1;
+    exp.y = 1;
+    exp.barrier = types.Barrier.last;
+    res = coallesce.run(inp).?;
+    try expect(std.meta.eql(res, exp));
 }

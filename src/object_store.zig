@@ -39,6 +39,7 @@ pub const ObjectStore = struct {
         const message = types.StoreToCoallesce{
             .kick_id = self.current_kick,
             .object = self.objects.items[self.object_index],
+            .barrier = if (self.object_index == self.objects.items.len - 1) types.Barrier.last else types.Barrier.none,
         };
 
         self.object_index += 1;
@@ -66,6 +67,7 @@ test "simple store test" {
 
     var resp = store.runBackend(kick2).?;
     try expect(resp.kick_id == 2);
+    try expect(resp.barrier == types.Barrier.last);
     try expect(std.meta.eql(resp.object, test_obj));
     try expect(store.runBackend(kick2) == null);
     try expect(store.current_kick == 0);
@@ -73,6 +75,7 @@ test "simple store test" {
 
     resp = store.runBackend(kick3).?;
     try expect(resp.kick_id == 3);
+    try expect(resp.barrier == types.Barrier.last);
     try expect(std.meta.eql(resp.object, test_obj));
     try expect(store.runBackend(kick3) == null);
     try expect(store.current_kick == 0);
@@ -96,6 +99,7 @@ test "multiple objects" {
     try store.addObject(obj1);
 
     var resp = store.runBackend(kick).?;
+    try expect(resp.barrier == types.Barrier.last);
     try expect(std.meta.eql(resp.object, obj1));
     try expect(store.current_kick == 1);
     try expect(store.object_index == 1);
@@ -106,10 +110,12 @@ test "multiple objects" {
     try store.addObject(obj2);
 
     resp = store.runBackend(kick).?;
+    try expect(resp.barrier == types.Barrier.none);
     try expect(std.meta.eql(resp.object, obj1));
     try expect(store.current_kick == 1);
     try expect(store.object_index == 1);
     resp = store.runBackend(kick).?;
+    try expect(resp.barrier == types.Barrier.last);
     try expect(std.meta.eql(resp.object, obj2));
     try expect(store.current_kick == 1);
     try expect(store.object_index == 2);
@@ -120,14 +126,17 @@ test "multiple objects" {
     try store.addObject(obj3);
 
     resp = store.runBackend(kick).?;
+    try expect(resp.barrier == types.Barrier.none);
     try expect(std.meta.eql(resp.object, obj1));
     try expect(store.current_kick == 1);
     try expect(store.object_index == 1);
     resp = store.runBackend(kick).?;
+    try expect(resp.barrier == types.Barrier.none);
     try expect(std.meta.eql(resp.object, obj2));
     try expect(store.current_kick == 1);
     try expect(store.object_index == 2);
     resp = store.runBackend(kick).?;
+    try expect(resp.barrier == types.Barrier.last);
     try expect(std.meta.eql(resp.object, obj3));
     try expect(store.current_kick == 1);
     try expect(store.object_index == 3);

@@ -1,4 +1,5 @@
 pub const ChildAction = enum { none, replace, combine, cut };
+pub const Barrier = enum { none, last };
 
 pub const Object = struct {
     object_id: u8,
@@ -26,11 +27,14 @@ pub const ManagerToStore = struct {
 pub const StoreToCoallesce = struct {
     kick_id: u8,
     object: Object,
+    barrier: Barrier,
 };
 
 pub const CoallesceToColour = struct {
     kick_id: u8,
     object_id: u8,
+    barrier: Barrier,
+
     x: u10,
     y: u10,
     depth: u4,
@@ -59,6 +63,18 @@ pub const CoallesceToColour = struct {
     c3_a: u8 = 0,
 };
 
-pub const ColourToDepthBuffer = struct {};
+pub const ColourToDepthBuffer = struct {
+    kick_id: u8,
+    object_id: u8,
+    x: u10,
+    y: u10,
+    depth: u4,
+    barrier: Barrier,
+
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+};
 
 pub const DepthBufferToFrameBuffer = struct {};
