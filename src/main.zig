@@ -14,15 +14,21 @@ pub fn main() !void {
 
     //Component Instantiation
 
+    std.log.info("{s}", .{"Begining component instantiation"});
+
     var manager = component_manager.Manager.init(3);
     defer manager.deinit();
 
     var store = component_store.ObjectStore.init(gpa.allocator());
     defer store.deinit();
 
+    std.log.info("{s}", .{"Adding objects... "});
+
     try store.addObject(.{ .object_id = 1, .x = 3, .y = 3, .width = 3, .height = 3, .depth = 0 });
     try store.addObject(.{ .object_id = 2, .x = 13, .y = 13, .width = 3, .height = 3, .depth = 0, .colour_r = 0, .colour_g = 255 });
     try store.addObject(.{ .object_id = 3, .x = 23, .y = 23, .width = 3, .height = 3, .depth = 0, .colour_r = 0, .colour_b = 255 });
+
+    std.log.info("{s}", .{"Done"});
 
     var coallesce = component_coallesce.Coallesce.init();
     defer coallesce.deinit();
@@ -35,12 +41,16 @@ pub fn main() !void {
 
     //Pipeline simulation
 
+    std.log.info("{s}", .{"Starting simulation"});
+
+    std.log.info("{s}", .{"Running manager"});
     var manager_output = std.ArrayList(types.ManagerToStore).init(gpa.allocator());
     defer manager_output.deinit();
     while (manager.run()) |kick| {
         try manager_output.append(kick);
     }
 
+    std.log.info("{s}", .{"Running store"});
     var store_output = std.ArrayList(types.StoreToCoallesce).init(gpa.allocator());
     defer store_output.deinit();
     for (try manager_output.toOwnedSlice()) |kick| {
@@ -49,6 +59,7 @@ pub fn main() !void {
         }
     }
 
+    std.log.info("{s}", .{"Running coallesce"});
     var coallesce_output = std.ArrayList(types.CoallesceToColour).init(gpa.allocator());
     defer coallesce_output.deinit();
     for (try store_output.toOwnedSlice()) |object| {
@@ -57,14 +68,15 @@ pub fn main() !void {
         }
     }
 
+    std.log.info("{s}", .{"Running colouring"});
     var colouring_output = std.ArrayList(types.ColourToDepthBuffer).init(gpa.allocator());
     defer colouring_output.deinit();
     for (try coallesce_output.toOwnedSlice()) |pixel| {
-        while (colouring.run(pixel)) |colour| {
-            try colouring_output.append(colour);
-        }
+        const colour = colouring.run(pixel) orelse continue;
+        try colouring_output.append(colour);
     }
 
+    std.log.info("{s}", .{"Running depth buffer"});
     var depth_buffer_output = std.ArrayList(types.DepthBufferToFrameBuffer).init(gpa.allocator());
     defer {
         for (depth_buffer_output.items) |*buffer| {
@@ -73,21 +85,27 @@ pub fn main() !void {
         depth_buffer_output.deinit();
     }
     for (try colouring_output.toOwnedSlice()) |pixel| {
-        while (try depth_buffer.run(pixel)) |output_buffer| {
-            try depth_buffer_output.append(output_buffer);
-        }
+        const buf = try depth_buffer.run(pixel) orelse continue;
+        try depth_buffer_output.append(buf);
     }
 
-    for (try depth_buffer_output.toOwnedSlice(), 0..depth_buffer_output.items.len) |framebuffer, index| {
+    std.log.info("{s}", .{"Running image generation"});
+    for (depth_buffer_output.items, 0..depth_buffer_output.items.len) |framebuffer, index| {
         const filename = try std.fmt.allocPrint(gpa.allocator(), "output/{d:0>3}_frame.ppm", .{index});
+        defer gpa.allocator().free(filename);
         try writePPMFile(framebuffer.pixels, filename);
     }
+
+    std.log.info("{s}", .{"Finished."});
 }
 
 fn writePPMFile(framebuffer: []u24, filename: []u8) !void {
     _ = framebuffer;
-    std.debug.print("{s}", .{filename});
+    std.log.debug("Writing file {s}", .{filename});
 }
+
+const expect = std.testing.expect;
+const ta = std.testing.allocator;
 
 test {
     std.testing.refAllDecls(@This());
