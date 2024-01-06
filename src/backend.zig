@@ -83,11 +83,56 @@ const expect = std.testing.expect;
 const ta = std.testing.allocator;
 var tc = system_config.Config{ .display_width = 3, .display_height = 3 };
 
-test {
+test "single object" {
     var store = component_store.ObjectStore.init(ta, &tc);
     defer store.deinit();
 
     try store.addObject(.{ .object_id = 1, .x = 1, .y = 1, .width = 1, .height = 1, .depth = 0 });
     var framebuffer = try run_backend(ta, &store, &tc);
     defer framebuffer.deinit();
+
+    for (0..3) |y| {
+        for (0..3) |x| {
+            if (y == 1 and x == 1) {
+                try expect(try framebuffer.sample(1, 1) == 0xFF0000);
+            } else {
+                try expect(try framebuffer.sample(y, x) == 0x000000);
+            }
+        }
+    }
+}
+
+test "multiple object" {
+    var store = component_store.ObjectStore.init(ta, &tc);
+    defer store.deinit();
+
+    try store.addObject(.{ .object_id = 1, .x = 0, .y = 0, .width = 1, .height = 1, .depth = 0 });
+    try store.addObject(.{ .object_id = 2, .x = 1, .y = 1, .width = 1, .height = 1, .depth = 0 });
+    try store.addObject(.{ .object_id = 3, .x = 2, .y = 2, .width = 1, .height = 1, .depth = 0 });
+    var framebuffer = try run_backend(ta, &store, &tc);
+    defer framebuffer.deinit();
+
+    for (0..3) |y| {
+        for (0..3) |x| {
+            const exp: u24 = if (y == x) 0xFF0000 else 0;
+            try expect((try framebuffer.sample(y, x)) == exp);
+        }
+    }
+}
+
+test "depth test" {
+    var store = component_store.ObjectStore.init(ta, &tc);
+    defer store.deinit();
+
+    try store.addObject(.{ .object_id = 1, .x = 0, .y = 0, .width = 3, .height = 3, .depth = 0 });
+    try store.addObject(.{ .object_id = 2, .x = 1, .y = 1, .width = 2, .height = 2, .depth = 1, .colour_r = 0, .colour_b = 255 });
+    var framebuffer = try run_backend(ta, &store, &tc);
+    defer framebuffer.deinit();
+
+    for (0..3) |y| {
+        for (0..3) |x| {
+            const exp: u24 = if (y >= 1 and x >= 1) 0x0000FF else 0xFF0000;
+            try expect((try framebuffer.sample(y, x)) == exp);
+        }
+    }
 }

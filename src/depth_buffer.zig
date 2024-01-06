@@ -65,7 +65,13 @@ pub const DepthBuffer = struct {
 
         self.allocate_new = true;
 
-        return types.FrameBuffer{ .kick_id = pixel.kick_id, .pixels = self.pixels, .allocator = self.allocator };
+        return types.FrameBuffer{
+            .kick_id = pixel.kick_id,
+            .width = self.config.display_width,
+            .height = self.config.display_height,
+            .pixels = self.pixels,
+            .allocator = self.allocator,
+        };
     }
 };
 

@@ -91,8 +91,14 @@ pub const ColourToDepthBuffer = struct {
 pub const FrameBuffer = struct {
     kick_id: u8,
     pixels: []u24,
+    width: u32,
+    height: u32,
     allocator: std.mem.Allocator,
     pub fn deinit(self: *FrameBuffer) void {
         self.allocator.free(self.pixels);
+    }
+    pub fn sample(self: *FrameBuffer, y: usize, x: usize) !u24 {
+        if (y >= self.height or x >= self.width) return error.RangeError;
+        return self.pixels[self.width * y + x];
     }
 };
