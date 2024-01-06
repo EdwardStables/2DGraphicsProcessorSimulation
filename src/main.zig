@@ -60,6 +60,19 @@ pub fn main() !void {
             try colouring_output.append(colour);
         }
     }
+
+    var depth_buffer_output = std.ArrayList(types.DepthBufferToFrameBuffer).init(gpa.allocator());
+    defer {
+        for (depth_buffer_output.items) |*buffer| {
+            buffer.deinit();
+        }
+        depth_buffer_output.deinit();
+    }
+    for (try colouring_output.toOwnedSlice()) |pixel| {
+        while (try depth_buffer.run(pixel)) |output_buffer| {
+            try depth_buffer_output.append(output_buffer);
+        }
+    }
 }
 
 test {
