@@ -20,6 +20,10 @@ pub fn main() !void {
     var store = component_store.ObjectStore.init(gpa.allocator());
     defer store.deinit();
 
+    try store.addObject(.{ .object_id = 1, .x = 3, .y = 3, .width = 3, .height = 3, .depth = 0 });
+    try store.addObject(.{ .object_id = 2, .x = 13, .y = 13, .width = 3, .height = 3, .depth = 0, .colour_r = 0, .colour_g = 255 });
+    try store.addObject(.{ .object_id = 3, .x = 23, .y = 23, .width = 3, .height = 3, .depth = 0, .colour_r = 0, .colour_b = 255 });
+
     var coallesce = component_coallesce.Coallesce.init();
     defer coallesce.deinit();
 
