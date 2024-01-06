@@ -4,3 +4,4 @@
 output.txt
 zig-cache
 zig-out
+*ppm

@@ -7,6 +7,7 @@ const component_colour = @import("colouring.zig");
 const component_depth_buffer = @import("depth_buffer.zig");
 
 const types = @import("backend_types.zig");
+const config = @import("backend_config.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -16,7 +17,7 @@ pub fn main() !void {
 
     std.log.info("Beginning component instantiation", .{});
 
-    var manager = component_manager.Manager.init(3);
+    var manager = component_manager.Manager.init(1);
     defer manager.deinit();
 
     var store = component_store.ObjectStore.init(gpa.allocator());
@@ -100,8 +101,16 @@ pub fn main() !void {
 }
 
 fn writePPMFile(framebuffer: []u24, filename: []u8) !void {
-    _ = framebuffer;
     std.log.debug("Writing file {s}", .{filename});
+
+    std.debug.print("P3\n{d} {d}\n255\n", .{ config.display_width, config.display_height });
+
+    for (0..(config.display_width * config.display_height)) |i| {
+        const r: u8 = @truncate(framebuffer[i] >> 16);
+        const g: u8 = @truncate(framebuffer[i] >> 8);
+        const b: u8 = @truncate(framebuffer[i]);
+        std.debug.print("{d} {d} {d}\n", .{ r, g, b });
+    }
 }
 
 const expect = std.testing.expect;
