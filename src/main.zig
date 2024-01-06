@@ -17,7 +17,7 @@ pub fn main() !void {
 
     std.log.info("Beginning component instantiation", .{});
 
-    var manager = component_manager.Manager.init(1);
+    var manager = component_manager.Manager.init(2);
     defer manager.deinit();
 
     var store = component_store.ObjectStore.init(gpa.allocator());
@@ -91,8 +91,20 @@ pub fn main() !void {
     }
 
     std.log.info("Running image generation", .{});
+
+    const output_directory = "output";
+
+    std.fs.cwd().deleteTree(output_directory) catch |e| {
+        switch (e) {
+            error.InvalidHandle => {}, //That's fine
+            else => return e,
+        }
+    };
+
+    try std.fs.cwd().makeDir(output_directory);
+
     for (depth_buffer_output.items, 0..depth_buffer_output.items.len) |framebuffer, index| {
-        const filename = try std.fmt.allocPrint(gpa.allocator(), "output/{d:0>3}_frame.ppm", .{index});
+        const filename = try std.fmt.allocPrint(gpa.allocator(), "{s}/{d:0>3}_frame.ppm", .{ output_directory, index });
         defer gpa.allocator().free(filename);
         try writePPMFile(framebuffer.pixels, filename);
     }
@@ -103,13 +115,18 @@ pub fn main() !void {
 fn writePPMFile(framebuffer: []u24, filename: []u8) !void {
     std.log.debug("Writing file {s}", .{filename});
 
-    std.debug.print("P3\n{d} {d}\n255\n", .{ config.display_width, config.display_height });
+    const file = try std.fs.cwd().createFile(filename, .{ .read = true });
+    defer file.close();
+
+    const writer = file.writer();
+
+    try std.fmt.format(writer, "P3\n{d} {d}\n255\n", .{ config.display_width, config.display_height });
 
     for (0..(config.display_width * config.display_height)) |i| {
         const r: u8 = @truncate(framebuffer[i] >> 16);
         const g: u8 = @truncate(framebuffer[i] >> 8);
         const b: u8 = @truncate(framebuffer[i]);
-        std.debug.print("{d} {d} {d}\n", .{ r, g, b });
+        try std.fmt.format(writer, "{d} {d} {d}\n", .{ r, g, b });
     }
 }
 
