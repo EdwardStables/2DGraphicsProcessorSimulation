@@ -14,7 +14,7 @@ pub fn main() !void {
 
     //Component Instantiation
 
-    var manager = component_manager.Manager.init();
+    var manager = component_manager.Manager.init(3);
     defer manager.deinit();
 
     var store = component_store.ObjectStore.init(gpa.allocator());
@@ -73,6 +73,16 @@ pub fn main() !void {
             try depth_buffer_output.append(output_buffer);
         }
     }
+
+    for (try depth_buffer_output.toOwnedSlice(), 0..depth_buffer_output.items.len) |framebuffer, index| {
+        const filename = try std.fmt.allocPrint(gpa.allocator(), "output/{d:0>3}_frame.ppm", .{index});
+        try writePPMFile(framebuffer.pixels, filename);
+    }
+}
+
+fn writePPMFile(framebuffer: []u24, filename: []u8) !void {
+    _ = framebuffer;
+    std.debug.print("{s}", .{filename});
 }
 
 test {
