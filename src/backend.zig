@@ -9,12 +9,12 @@ const component_depth_buffer = @import("depth_buffer.zig");
 const types = @import("backend_types.zig");
 const system_config = @import("system_config.zig");
 
-pub fn run_backend(allocator: std.mem.Allocator, object_store: *component_store.ObjectStore, config: *system_config.Config) !void {
+pub fn run_backend(allocator: std.mem.Allocator, object_store: *component_store.ObjectStore, config: *system_config.Config) !types.FrameBuffer {
     //Component Instantiation
 
     std.log.info("Beginning component instantiation", .{});
 
-    var manager = component_manager.Manager.init(2, config);
+    var manager = component_manager.Manager.init(1, config);
     defer manager.deinit();
 
     var coallesce = component_coallesce.Coallesce.init(config);
@@ -64,7 +64,7 @@ pub fn run_backend(allocator: std.mem.Allocator, object_store: *component_store.
     }
 
     std.log.info("Running depth buffer", .{});
-    var depth_buffer_output = std.ArrayList(types.DepthBufferToFrameBuffer).init(allocator);
+    var depth_buffer_output = std.ArrayList(types.FrameBuffer).init(allocator);
     defer {
         for (depth_buffer_output.items) |*buffer| {
             buffer.deinit();
@@ -72,46 +72,22 @@ pub fn run_backend(allocator: std.mem.Allocator, object_store: *component_store.
         depth_buffer_output.deinit();
     }
     for (colouring_output.items) |pixel| {
-        const buf = try depth_buffer.run(pixel) orelse continue;
-        try depth_buffer_output.append(buf);
+        var buf = try depth_buffer.run(pixel) orelse continue;
+        defer buf.deinit();
+        return buf;
     }
 
-    std.log.info("Running image generation", .{});
-
-    const output_directory = "output";
-
-    std.fs.cwd().deleteTree(output_directory) catch |e| {
-        switch (e) {
-            error.InvalidHandle => {}, //That's fine
-            else => return e,
-        }
-    };
-
-    try std.fs.cwd().makeDir(output_directory);
-
-    for (depth_buffer_output.items, 0..depth_buffer_output.items.len) |framebuffer, index| {
-        const filename = try std.fmt.allocPrint(allocator, "{s}/{d:0>3}_frame.ppm", .{ output_directory, index });
-        defer allocator.free(filename);
-        try writePPMFile(framebuffer.pixels, filename, config);
-    }
-
-    std.log.info("Finished", .{});
+    unreachable;
 }
 
-fn writePPMFile(framebuffer: []u24, filename: []u8, config: *system_config.Config) !void {
-    std.log.debug("Writing file {s}", .{filename});
+const expect = std.testing.expect;
+const ta = std.testing.allocator;
+var tc = system_config.Config{ .display_width = 3, .display_height = 3 };
 
-    const file = try std.fs.cwd().createFile(filename, .{ .read = true });
-    defer file.close();
+test {
+    var store = component_store.ObjectStore.init(ta, &tc);
+    defer store.deinit();
 
-    const writer = file.writer();
-
-    try std.fmt.format(writer, "P3\n{d} {d}\n255\n", .{ config.display_width, config.display_height });
-
-    for (0..(config.display_width * config.display_height)) |i| {
-        const r: u8 = @truncate(framebuffer[i] >> 16);
-        const g: u8 = @truncate(framebuffer[i] >> 8);
-        const b: u8 = @truncate(framebuffer[i]);
-        try std.fmt.format(writer, "{d} {d} {d}\n", .{ r, g, b });
-    }
+    try store.addObject(.{ .object_id = 1, .x = 1, .y = 1, .width = 1, .height = 1, .depth = 0 });
+    _ = try run_backend(ta, &store, &tc);
 }

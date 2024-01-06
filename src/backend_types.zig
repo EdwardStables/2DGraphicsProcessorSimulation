@@ -88,11 +88,11 @@ pub const ColourToDepthBuffer = struct {
     a: u8,
 };
 
-pub const DepthBufferToFrameBuffer = struct {
+pub const FrameBuffer = struct {
     kick_id: u8,
     pixels: []u24,
     allocator: std.mem.Allocator,
-    pub fn deinit(self: *DepthBufferToFrameBuffer) void {
+    pub fn deinit(self: *FrameBuffer) void {
         self.allocator.free(self.pixels);
     }
 };

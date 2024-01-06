@@ -43,7 +43,7 @@ pub const DepthBuffer = struct {
         }
     }
 
-    pub fn run(self: *DepthBuffer, pixel: types.ColourToDepthBuffer) !?types.DepthBufferToFrameBuffer {
+    pub fn run(self: *DepthBuffer, pixel: types.ColourToDepthBuffer) !?types.FrameBuffer {
         if (self.allocate_new) {
             self.pixels = try self.allocator.alloc(u24, self.config.display_height * self.config.display_width);
             self.zero();
@@ -65,7 +65,7 @@ pub const DepthBuffer = struct {
 
         self.allocate_new = true;
 
-        return types.DepthBufferToFrameBuffer{ .kick_id = pixel.kick_id, .pixels = self.pixels, .allocator = self.allocator };
+        return types.FrameBuffer{ .kick_id = pixel.kick_id, .pixels = self.pixels, .allocator = self.allocator };
     }
 };
 

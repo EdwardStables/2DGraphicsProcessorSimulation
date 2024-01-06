@@ -22,9 +22,60 @@ pub fn main() !void {
 
     std.log.info("Done", .{});
 
-    try backend.run_backend(gpa.allocator(), &store, &config);
+    var framebuffer = try backend.run_backend(gpa.allocator(), &store, &config);
+    defer framebuffer.deinit();
+
+    const output = "output";
+    try createOutputDirectory(output);
+    try writePPMFile(
+        framebuffer,
+        gpa.allocator(),
+        0,
+        config,
+        output,
+    );
 
     std.log.info("Finished", .{});
+}
+
+fn createOutputDirectory(dirname: []const u8) !void {
+    std.fs.cwd().deleteTree(dirname) catch |e| {
+        switch (e) {
+            error.InvalidHandle => {}, //That's fine
+            else => return e,
+        }
+    };
+
+    try std.fs.cwd().makeDir(dirname);
+}
+
+fn writePPMFile(
+    framebuffer: types.FrameBuffer,
+    allocator: std.mem.Allocator,
+    index: u32,
+    config: system_config.Config,
+    output_directory: []const u8,
+) !void {
+    std.log.info("Running image generation", .{});
+
+    const filename = try std.fmt.allocPrint(allocator, "{s}/{d:0>3}_frame.ppm", .{ output_directory, index });
+    defer allocator.free(filename);
+
+    std.log.debug("Writing file {s}", .{filename});
+
+    const file = try std.fs.cwd().createFile(filename, .{ .read = true });
+    defer file.close();
+
+    const writer = file.writer();
+
+    try std.fmt.format(writer, "P3\n{d} {d}\n255\n", .{ config.display_width, config.display_height });
+
+    for (0..(config.display_width * config.display_height)) |i| {
+        const r: u8 = @truncate(framebuffer.pixels[i] >> 16);
+        const g: u8 = @truncate(framebuffer.pixels[i] >> 8);
+        const b: u8 = @truncate(framebuffer.pixels[i]);
+        try std.fmt.format(writer, "{d} {d} {d}\n", .{ r, g, b });
+    }
 }
 
 const expect = std.testing.expect;
