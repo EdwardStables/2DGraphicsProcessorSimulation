@@ -15,15 +15,15 @@ pub const Manager = struct {
             return null;
         }
 
-        self.kicks_to_send -= 1;
+        defer self.kicks_to_send -= 1;
         return types.ManagerToStore{ .kick_id = self.kicks_to_send };
     }
 };
 
 test "simple manager test" {
     var manager = Manager.init(3);
+    try expect(manager.run().?.kick_id == 3);
     try expect(manager.run().?.kick_id == 2);
     try expect(manager.run().?.kick_id == 1);
-    try expect(manager.run().?.kick_id == 0);
     try expect(manager.run() == null);
 }
