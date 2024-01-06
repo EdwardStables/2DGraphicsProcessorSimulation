@@ -1,12 +1,14 @@
 const std = @import("std");
 const types = @import("backend_types.zig");
-const config = @import("backend_config.zig");
+const system_config = @import("backend_config.zig");
 
 const Action = types.ChildAction;
 
 pub const Colouring = struct {
-    pub fn init() Colouring {
-        return Colouring{};
+    config: system_config.Config,
+
+    pub fn init(config: system_config.Config) Colouring {
+        return Colouring{ .config = config };
     }
 
     pub fn deinit(_: *Colouring) void {}
@@ -113,6 +115,7 @@ pub const Colouring = struct {
 };
 
 const expect = std.testing.expect;
+const test_config = system_config.Config{};
 
 test "pixel test" {
     try expect(Colouring.calcPixel(1, 2, Action.none).? == 1);
@@ -148,7 +151,7 @@ test "run no children" {
         .a = pixel.a,
     };
 
-    var colouring = Colouring.init();
+    var colouring = Colouring.init(test_config);
     defer colouring.deinit();
 
     const res = colouring.run(pixel);
@@ -183,7 +186,7 @@ test "run no children barrier" {
         .a = pixel.a,
     };
 
-    var colouring = Colouring.init();
+    var colouring = Colouring.init(test_config);
     defer colouring.deinit();
 
     const res = colouring.run(pixel);
@@ -224,7 +227,7 @@ test "run 1 child" {
         .a = pixel.c1_a,
     };
 
-    var colouring = Colouring.init();
+    var colouring = Colouring.init(test_config);
     defer colouring.deinit();
 
     const res = colouring.run(pixel);
@@ -271,7 +274,7 @@ test "run 2 children" {
         .a = 15,
     };
 
-    var colouring = Colouring.init();
+    var colouring = Colouring.init(test_config);
     defer colouring.deinit();
 
     const res = colouring.run(pixel);
@@ -310,7 +313,7 @@ test "run 3 children" {
         .c3_action = Action.cut,
     };
 
-    var colouring = Colouring.init();
+    var colouring = Colouring.init(test_config);
     defer colouring.deinit();
 
     var res = colouring.run(pixel);

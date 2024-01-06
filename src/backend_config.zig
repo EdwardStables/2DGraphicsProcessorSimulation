@@ -1,3 +1,5 @@
-pub const object_store_size = 32;
-pub const display_width = 256;
-pub const display_height = 256;
+pub const Config = struct {
+    object_store_size: u8 = 32,
+    display_width: u32 = 256,
+    display_height: u32 = 256,
+};

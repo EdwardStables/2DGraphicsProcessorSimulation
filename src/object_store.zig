@@ -1,6 +1,6 @@
 const std = @import("std");
 const types = @import("backend_types.zig");
-const config = @import("backend_config.zig");
+const system_config = @import("backend_config.zig");
 
 pub const ObjectStore = struct {
     //0 indicates no kick is running
@@ -8,9 +8,10 @@ pub const ObjectStore = struct {
     object_index: u8 = 0,
     objects: std.ArrayList(types.Object) = undefined,
     allocator: std.mem.Allocator = undefined,
+    config: system_config.Config,
 
-    pub fn init(allocator: std.mem.Allocator) ObjectStore {
-        var store = ObjectStore{};
+    pub fn init(allocator: std.mem.Allocator, config: system_config.Config) ObjectStore {
+        var store = ObjectStore{ .config = config };
         store.allocator = allocator;
         store.objects = std.ArrayList(types.Object).init(allocator);
         return store;
@@ -52,7 +53,7 @@ const expect = std.testing.expect;
 const ta = std.testing.allocator;
 
 test "simple store test" {
-    var store = ObjectStore.init(ta);
+    var store = ObjectStore.init(ta, system_config.Config{});
     defer store.deinit();
     const test_obj = types.Object{ .object_id = 123, .x = 10, .y = 10, .width = 100, .height = 100 };
 
@@ -83,7 +84,7 @@ test "simple store test" {
 }
 
 test "multiple objects" {
-    var store = ObjectStore.init(ta);
+    var store = ObjectStore.init(ta, system_config.Config{});
     defer store.deinit();
 
     const obj1 = types.Object{ .object_id = 123, .x = 10, .y = 10, .width = 100, .height = 100 };

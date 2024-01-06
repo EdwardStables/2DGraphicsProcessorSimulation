@@ -7,9 +7,11 @@ const component_colour = @import("colouring.zig");
 const component_depth_buffer = @import("depth_buffer.zig");
 
 const types = @import("backend_types.zig");
-const config = @import("backend_config.zig");
+const system_config = @import("backend_config.zig");
 
 pub fn main() !void {
+    const config = system_config.Config{};
+
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
@@ -17,10 +19,10 @@ pub fn main() !void {
 
     std.log.info("Beginning component instantiation", .{});
 
-    var manager = component_manager.Manager.init(2);
+    var manager = component_manager.Manager.init(2, config);
     defer manager.deinit();
 
-    var store = component_store.ObjectStore.init(gpa.allocator());
+    var store = component_store.ObjectStore.init(gpa.allocator(), config);
     defer store.deinit();
 
     std.log.info("Adding objects...", .{});
@@ -31,13 +33,13 @@ pub fn main() !void {
 
     std.log.info("Done", .{});
 
-    var coallesce = component_coallesce.Coallesce.init();
+    var coallesce = component_coallesce.Coallesce.init(config);
     defer coallesce.deinit();
 
-    var colouring = component_colour.Colouring.init();
+    var colouring = component_colour.Colouring.init(config);
     defer colouring.deinit();
 
-    var depth_buffer = try component_depth_buffer.DepthBuffer.init(gpa.allocator());
+    var depth_buffer = try component_depth_buffer.DepthBuffer.init(gpa.allocator(), config);
     defer depth_buffer.deinit();
 
     //Pipeline simulation
@@ -106,13 +108,13 @@ pub fn main() !void {
     for (depth_buffer_output.items, 0..depth_buffer_output.items.len) |framebuffer, index| {
         const filename = try std.fmt.allocPrint(gpa.allocator(), "{s}/{d:0>3}_frame.ppm", .{ output_directory, index });
         defer gpa.allocator().free(filename);
-        try writePPMFile(framebuffer.pixels, filename);
+        try writePPMFile(framebuffer.pixels, filename, config);
     }
 
     std.log.info("Finished", .{});
 }
 
-fn writePPMFile(framebuffer: []u24, filename: []u8) !void {
+fn writePPMFile(framebuffer: []u24, filename: []u8, config: system_config.Config) !void {
     std.log.debug("Writing file {s}", .{filename});
 
     const file = try std.fs.cwd().createFile(filename, .{ .read = true });
