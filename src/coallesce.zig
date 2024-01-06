@@ -1,6 +1,6 @@
 const std = @import("std");
 const types = @import("backend_types.zig");
-const system_config = @import("backend_config.zig");
+const system_config = @import("system_config.zig");
 
 const Pair = struct { x: u10 = 0, y: u10 = 0 };
 
@@ -10,9 +10,9 @@ pub const Coallesce = struct {
     y_min: u10 = 0,
     next_x: u10 = 0,
     next_y: u10 = 0,
-    config: system_config.Config,
+    config: *system_config.Config,
 
-    pub fn init(config: system_config.Config) Coallesce {
+    pub fn init(config: *system_config.Config) Coallesce {
         return Coallesce{ .config = config };
     }
 
@@ -104,10 +104,12 @@ pub const Coallesce = struct {
 };
 
 const expect = std.testing.expect;
-const test_config = system_config.Config{};
+const test_w: i10 = 256;
+const test_h: i10 = 256;
+var test_config = system_config.Config{ .display_height = test_h, .display_width = test_w };
 
 fn test2x2block(x: i10, y: i10, count: u8, one: Pair, two: Pair, three: Pair, four: Pair) !void {
-    var coallesce = Coallesce.init(test_config);
+    var coallesce = Coallesce.init(&test_config);
     const obj = types.Object{ .object_id = 1, .x = x, .y = y, .width = 2, .height = 2 };
     const inp = types.StoreToCoallesce{
         .kick_id = 1,
@@ -167,7 +169,7 @@ test "in range iteration test" {
 
 test "out of range iteration test" {
     try test2x2block(-5, -5, 0, .{}, .{}, .{}, .{});
-    try test2x2block(test_config.display_width + 10, test_config.display_height + 10, 0, .{}, .{}, .{}, .{});
+    try test2x2block(test_w + 10, test_h + 10, 0, .{}, .{}, .{}, .{});
 }
 
 test "left out of range test" {
@@ -175,7 +177,7 @@ test "left out of range test" {
 }
 
 test "right side out of range test" {
-    const w = test_config.display_width - 1;
+    const w = test_w - 1;
     try test2x2block(w, 1, 2, .{ .x = w, .y = 1 }, .{ .x = w, .y = 2 }, .{}, .{});
 }
 
@@ -184,7 +186,7 @@ test "top side out of range test" {
 }
 
 test "bottom side out of range test" {
-    const h = test_config.display_height - 1;
+    const h = test_h - 1;
     try test2x2block(3, h, 2, .{ .x = 3, .y = h }, .{ .x = 4, .y = h }, .{}, .{});
 }
 
@@ -193,23 +195,23 @@ test "top left corner" {
 }
 
 test "top right corner" {
-    const w = test_config.display_width - 1;
+    const w = test_w - 1;
     try test2x2block(w, -1, 1, .{ .x = w, .y = 0 }, .{}, .{}, .{});
 }
 
 test "bottom left corner" {
-    const h = test_config.display_height - 1;
+    const h = test_h - 1;
     try test2x2block(-1, h, 1, .{ .x = 0, .y = h }, .{}, .{}, .{});
 }
 
 test "bottom right corner" {
-    const w = test_config.display_width - 1;
-    const h = test_config.display_height - 1;
+    const w = test_w - 1;
+    const h = test_h - 1;
     try test2x2block(w, h, 1, .{ .x = w, .y = h }, .{}, .{}, .{});
 }
 
 test "barrier" {
-    var coallesce = Coallesce.init(test_config);
+    var coallesce = Coallesce.init(&test_config);
     const obj = types.Object{ .object_id = 1, .x = 0, .y = 0, .width = 2, .height = 2 };
     const inp = types.StoreToCoallesce{
         .kick_id = 1,

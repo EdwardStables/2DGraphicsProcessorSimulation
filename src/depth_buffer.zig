@@ -1,15 +1,15 @@
 const std = @import("std");
 const types = @import("backend_types.zig");
-const system_config = @import("backend_config.zig");
+const system_config = @import("system_config.zig");
 
 pub const DepthBuffer = struct {
     allocator: std.mem.Allocator,
     pixels: []u24,
     depths: []u4,
     allocate_new: bool,
-    config: system_config.Config,
+    config: *system_config.Config,
 
-    pub fn init(allocator: std.mem.Allocator, config: system_config.Config) !DepthBuffer {
+    pub fn init(allocator: std.mem.Allocator, config: *system_config.Config) !DepthBuffer {
         const db = DepthBuffer{
             .allocator = allocator,
             .pixels = undefined,
@@ -30,7 +30,7 @@ pub const DepthBuffer = struct {
         self.allocator.free(self.depths);
     }
 
-    fn getIndex(config: system_config.Config, y: usize, x: usize) usize {
+    fn getIndex(config: *system_config.Config, y: usize, x: usize) usize {
         return config.display_width * y + x;
     }
 
@@ -71,15 +71,15 @@ pub const DepthBuffer = struct {
 
 const expect = std.testing.expect;
 const ta = std.testing.allocator;
-const test_config = system_config.Config{};
+var test_config = system_config.Config{};
 
 test "idle cleanup" {
-    var db = try DepthBuffer.init(ta, test_config);
+    var db = try DepthBuffer.init(ta, &test_config);
     defer db.deinit();
 }
 
 test "write one pixel" {
-    var db = try DepthBuffer.init(ta, test_config);
+    var db = try DepthBuffer.init(ta, &test_config);
     defer db.deinit();
 
     const pixel = types.ColourToDepthBuffer{
@@ -105,13 +105,13 @@ test "write one pixel" {
     for (0..test_config.display_height) |y| {
         for (0..test_config.display_width) |x| {
             if (y == 0 and x == 0) continue;
-            try expect(buffer.pixels[DepthBuffer.getIndex(test_config, y, x)] == 0);
+            try expect(buffer.pixels[DepthBuffer.getIndex(&test_config, y, x)] == 0);
         }
     }
 }
 
 test "multiple writes" {
-    var db = try DepthBuffer.init(ta, test_config);
+    var db = try DepthBuffer.init(ta, &test_config);
     defer db.deinit();
 
     var pixel = types.ColourToDepthBuffer{
@@ -143,13 +143,13 @@ test "multiple writes" {
         for (0..test_config.display_width) |x| {
             if (y == 0 and x == 0) continue;
             if (y == 0 and x == 1) continue;
-            try expect(buffer.pixels[DepthBuffer.getIndex(test_config, y, x)] == 0);
+            try expect(buffer.pixels[DepthBuffer.getIndex(&test_config, y, x)] == 0);
         }
     }
 }
 
 test "nulled pixel doesn't write" {
-    var db = try DepthBuffer.init(ta, test_config);
+    var db = try DepthBuffer.init(ta, &test_config);
     defer db.deinit();
 
     const pixel = types.ColourToDepthBuffer{
@@ -172,13 +172,13 @@ test "nulled pixel doesn't write" {
     try expect(buffer.kick_id == pixel.kick_id);
     for (0..test_config.display_height) |y| {
         for (0..test_config.display_width) |x| {
-            try expect(buffer.pixels[DepthBuffer.getIndex(test_config, y, x)] == 0);
+            try expect(buffer.pixels[DepthBuffer.getIndex(&test_config, y, x)] == 0);
         }
     }
 }
 
 test "depth override" {
-    var db = try DepthBuffer.init(ta, test_config);
+    var db = try DepthBuffer.init(ta, &test_config);
     defer db.deinit();
 
     var pixel = types.ColourToDepthBuffer{
@@ -211,13 +211,13 @@ test "depth override" {
     for (0..test_config.display_height) |y| {
         for (0..test_config.display_width) |x| {
             if (y == 0 and x == 0) continue;
-            try expect(buffer.pixels[DepthBuffer.getIndex(test_config, y, x)] == 0);
+            try expect(buffer.pixels[DepthBuffer.getIndex(&test_config, y, x)] == 0);
         }
     }
 }
 
 test "multiple kicks" {
-    var db = try DepthBuffer.init(ta, test_config);
+    var db = try DepthBuffer.init(ta, &test_config);
     defer db.deinit();
 
     var pixel = types.ColourToDepthBuffer{
@@ -242,7 +242,7 @@ test "multiple kicks" {
     for (0..test_config.display_height) |y| {
         for (0..test_config.display_width) |x| {
             if (y == 0 and x == 0) continue;
-            try expect(buffer1.pixels[DepthBuffer.getIndex(test_config, y, x)] == 0);
+            try expect(buffer1.pixels[DepthBuffer.getIndex(&test_config, y, x)] == 0);
         }
     }
 
@@ -259,7 +259,7 @@ test "multiple kicks" {
     for (0..test_config.display_height) |y| {
         for (0..test_config.display_width) |x| {
             if (y == 0 and x == 0) continue;
-            try expect(buffer2.pixels[DepthBuffer.getIndex(test_config, y, x)] == 0);
+            try expect(buffer2.pixels[DepthBuffer.getIndex(&test_config, y, x)] == 0);
         }
     }
 }
