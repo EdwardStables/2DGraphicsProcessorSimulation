@@ -17,7 +17,7 @@ pub const Coallesce = struct {
 
     pub fn deinit(_: *Coallesce) void {}
 
-    fn test_next(self: *Coallesce, provisional_x: u10, provisional_y: u10, object: types.StoreToCoallesce) ?Pair {
+    fn testNext(self: *Coallesce, provisional_x: u10, provisional_y: u10, object: types.StoreToCoallesce) ?Pair {
         var x = provisional_x;
         var y = provisional_y;
 
@@ -59,7 +59,7 @@ pub const Coallesce = struct {
             provisional_y = self.next_y;
         }
 
-        const update = self.test_next(provisional_x, provisional_y, object) orelse return null;
+        const update = self.testNext(provisional_x, provisional_y, object) orelse return null;
 
         self.next_x = update.x;
         self.next_y = update.y;
@@ -77,7 +77,7 @@ pub const Coallesce = struct {
             self.next_y + @abs(object.object.y);
 
         //Testing the following position to see barrier value
-        const next_query = self.test_next(self.next_x + 1, self.next_y, object);
+        const next_query = self.testNext(self.next_x + 1, self.next_y, object);
         const next_invalid = next_query == null;
         const last_barrier = next_invalid and object.barrier == types.Barrier.last;
 

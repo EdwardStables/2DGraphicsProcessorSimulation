@@ -28,15 +28,15 @@ pub const DepthBuffer = struct {
         self.allocator.free(self.depths);
     }
 
-    fn get_index(y: usize, x: usize) usize {
+    fn getIndex(y: usize, x: usize) usize {
         return config.display_width * y + x;
     }
 
     fn zero(self: *DepthBuffer) void {
         for (0..config.display_height) |y| {
             for (0..config.display_width) |x| {
-                self.pixels[get_index(y, x)] = 0;
-                self.depths[get_index(y, x)] = 0;
+                self.pixels[getIndex(y, x)] = 0;
+                self.depths[getIndex(y, x)] = 0;
             }
         }
     }
@@ -48,7 +48,7 @@ pub const DepthBuffer = struct {
             self.allocate_new = false;
         }
 
-        const ind = DepthBuffer.get_index(pixel.y, pixel.x);
+        const ind = DepthBuffer.getIndex(pixel.y, pixel.x);
 
         //TODO consider alpha
         if (!pixel.nulled and pixel.depth >= self.depths[ind]) {
@@ -102,7 +102,7 @@ test "write one pixel" {
     for (0..config.display_height) |y| {
         for (0..config.display_width) |x| {
             if (y == 0 and x == 0) continue;
-            try expect(buffer.pixels[DepthBuffer.get_index(y, x)] == 0);
+            try expect(buffer.pixels[DepthBuffer.getIndex(y, x)] == 0);
         }
     }
 }
@@ -140,7 +140,7 @@ test "multiple writes" {
         for (0..config.display_width) |x| {
             if (y == 0 and x == 0) continue;
             if (y == 0 and x == 1) continue;
-            try expect(buffer.pixels[DepthBuffer.get_index(y, x)] == 0);
+            try expect(buffer.pixels[DepthBuffer.getIndex(y, x)] == 0);
         }
     }
 }
@@ -169,7 +169,7 @@ test "nulled pixel doesn't write" {
     try expect(buffer.kick_id == pixel.kick_id);
     for (0..config.display_height) |y| {
         for (0..config.display_width) |x| {
-            try expect(buffer.pixels[DepthBuffer.get_index(y, x)] == 0);
+            try expect(buffer.pixels[DepthBuffer.getIndex(y, x)] == 0);
         }
     }
 }
@@ -208,7 +208,7 @@ test "depth override" {
     for (0..config.display_height) |y| {
         for (0..config.display_width) |x| {
             if (y == 0 and x == 0) continue;
-            try expect(buffer.pixels[DepthBuffer.get_index(y, x)] == 0);
+            try expect(buffer.pixels[DepthBuffer.getIndex(y, x)] == 0);
         }
     }
 }
@@ -239,7 +239,7 @@ test "multiple kicks" {
     for (0..config.display_height) |y| {
         for (0..config.display_width) |x| {
             if (y == 0 and x == 0) continue;
-            try expect(buffer1.pixels[DepthBuffer.get_index(y, x)] == 0);
+            try expect(buffer1.pixels[DepthBuffer.getIndex(y, x)] == 0);
         }
     }
 
@@ -256,7 +256,7 @@ test "multiple kicks" {
     for (0..config.display_height) |y| {
         for (0..config.display_width) |x| {
             if (y == 0 and x == 0) continue;
-            try expect(buffer2.pixels[DepthBuffer.get_index(y, x)] == 0);
+            try expect(buffer2.pixels[DepthBuffer.getIndex(y, x)] == 0);
         }
     }
 }

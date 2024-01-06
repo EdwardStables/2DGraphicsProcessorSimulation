@@ -11,7 +11,7 @@ pub const Colouring = struct {
 
     pub fn deinit(_: *Colouring) void {}
 
-    fn calc_pixel(pixel: u8, child: u8, action: Action) ?u8 {
+    fn calcPixel(pixel: u8, child: u8, action: Action) ?u8 {
         switch (action) {
             Action.none => return pixel,
             Action.replace => return child,
@@ -24,30 +24,30 @@ pub const Colouring = struct {
         var nulled = false;
         var r = pixel.r;
 
-        r = Colouring.calc_pixel(r, pixel.c1_r, pixel.c1_action) orelse blk: {
+        r = Colouring.calcPixel(r, pixel.c1_r, pixel.c1_action) orelse blk: {
             nulled = true;
             break :blk 0;
         };
-        r = Colouring.calc_pixel(r, pixel.c2_r, pixel.c2_action) orelse blk: {
+        r = Colouring.calcPixel(r, pixel.c2_r, pixel.c2_action) orelse blk: {
             nulled = true;
             break :blk 0;
         };
-        r = Colouring.calc_pixel(r, pixel.c3_r, pixel.c3_action) orelse blk: {
+        r = Colouring.calcPixel(r, pixel.c3_r, pixel.c3_action) orelse blk: {
             nulled = true;
             break :blk 0;
         };
 
         var g = pixel.g;
         if (!nulled) {
-            g = Colouring.calc_pixel(g, pixel.c1_g, pixel.c1_action) orelse blk: {
+            g = Colouring.calcPixel(g, pixel.c1_g, pixel.c1_action) orelse blk: {
                 nulled = true;
                 break :blk 0;
             };
-            g = Colouring.calc_pixel(g, pixel.c2_g, pixel.c2_action) orelse blk: {
+            g = Colouring.calcPixel(g, pixel.c2_g, pixel.c2_action) orelse blk: {
                 nulled = true;
                 break :blk 0;
             };
-            g = Colouring.calc_pixel(g, pixel.c3_g, pixel.c3_action) orelse blk: {
+            g = Colouring.calcPixel(g, pixel.c3_g, pixel.c3_action) orelse blk: {
                 nulled = true;
                 break :blk 0;
             };
@@ -57,15 +57,15 @@ pub const Colouring = struct {
 
         var b = pixel.b;
         if (!nulled) {
-            b = Colouring.calc_pixel(b, pixel.c1_b, pixel.c1_action) orelse blk: {
+            b = Colouring.calcPixel(b, pixel.c1_b, pixel.c1_action) orelse blk: {
                 nulled = true;
                 break :blk 0;
             };
-            b = Colouring.calc_pixel(b, pixel.c2_b, pixel.c2_action) orelse blk: {
+            b = Colouring.calcPixel(b, pixel.c2_b, pixel.c2_action) orelse blk: {
                 nulled = true;
                 break :blk 0;
             };
-            b = Colouring.calc_pixel(b, pixel.c3_b, pixel.c3_action) orelse blk: {
+            b = Colouring.calcPixel(b, pixel.c3_b, pixel.c3_action) orelse blk: {
                 nulled = true;
                 break :blk 0;
             };
@@ -75,15 +75,15 @@ pub const Colouring = struct {
 
         var a = pixel.a;
         if (!nulled) {
-            a = Colouring.calc_pixel(a, pixel.c1_a, pixel.c1_action) orelse blk: {
+            a = Colouring.calcPixel(a, pixel.c1_a, pixel.c1_action) orelse blk: {
                 nulled = true;
                 break :blk 0;
             };
-            a = Colouring.calc_pixel(a, pixel.c2_a, pixel.c2_action) orelse blk: {
+            a = Colouring.calcPixel(a, pixel.c2_a, pixel.c2_action) orelse blk: {
                 nulled = true;
                 break :blk 0;
             };
-            a = Colouring.calc_pixel(a, pixel.c3_a, pixel.c3_action) orelse blk: {
+            a = Colouring.calcPixel(a, pixel.c3_a, pixel.c3_action) orelse blk: {
                 nulled = true;
                 break :blk 0;
             };
@@ -115,10 +115,10 @@ pub const Colouring = struct {
 const expect = std.testing.expect;
 
 test "pixel test" {
-    try expect(Colouring.calc_pixel(1, 2, Action.none).? == 1);
-    try expect(Colouring.calc_pixel(1, 2, Action.replace).? == 2);
-    try expect(Colouring.calc_pixel(1, 2, Action.cut) == null);
-    try expect(Colouring.calc_pixel(0, 128, Action.combine).? == 64);
+    try expect(Colouring.calcPixel(1, 2, Action.none).? == 1);
+    try expect(Colouring.calcPixel(1, 2, Action.replace).? == 2);
+    try expect(Colouring.calcPixel(1, 2, Action.cut) == null);
+    try expect(Colouring.calcPixel(0, 128, Action.combine).? == 64);
 }
 
 test "run no children" {
