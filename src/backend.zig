@@ -72,8 +72,7 @@ pub fn run_backend(allocator: std.mem.Allocator, object_store: *component_store.
         depth_buffer_output.deinit();
     }
     for (colouring_output.items) |pixel| {
-        var buf = try depth_buffer.run(pixel) orelse continue;
-        defer buf.deinit();
+        const buf = try depth_buffer.run(pixel) orelse continue;
         return buf;
     }
 
@@ -89,5 +88,6 @@ test {
     defer store.deinit();
 
     try store.addObject(.{ .object_id = 1, .x = 1, .y = 1, .width = 1, .height = 1, .depth = 0 });
-    _ = try run_backend(ta, &store, &tc);
+    var framebuffer = try run_backend(ta, &store, &tc);
+    defer framebuffer.deinit();
 }
