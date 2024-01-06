@@ -53,7 +53,7 @@ pub fn main() !void {
     std.log.info("{s}", .{"Running store"});
     var store_output = std.ArrayList(types.StoreToCoallesce).init(gpa.allocator());
     defer store_output.deinit();
-    for (try manager_output.toOwnedSlice()) |kick| {
+    for (manager_output.items) |kick| {
         while (store.runBackend(kick)) |object_attrs| {
             try store_output.append(object_attrs);
         }
@@ -62,7 +62,7 @@ pub fn main() !void {
     std.log.info("{s}", .{"Running coallesce"});
     var coallesce_output = std.ArrayList(types.CoallesceToColour).init(gpa.allocator());
     defer coallesce_output.deinit();
-    for (try store_output.toOwnedSlice()) |object| {
+    for (store_output.items) |object| {
         while (coallesce.run(object)) |pixel| {
             try coallesce_output.append(pixel);
         }
@@ -71,7 +71,7 @@ pub fn main() !void {
     std.log.info("{s}", .{"Running colouring"});
     var colouring_output = std.ArrayList(types.ColourToDepthBuffer).init(gpa.allocator());
     defer colouring_output.deinit();
-    for (try coallesce_output.toOwnedSlice()) |pixel| {
+    for (coallesce_output.items) |pixel| {
         const colour = colouring.run(pixel) orelse continue;
         try colouring_output.append(colour);
     }
@@ -84,7 +84,7 @@ pub fn main() !void {
         }
         depth_buffer_output.deinit();
     }
-    for (try colouring_output.toOwnedSlice()) |pixel| {
+    for (colouring_output.items) |pixel| {
         const buf = try depth_buffer.run(pixel) orelse continue;
         try depth_buffer_output.append(buf);
     }
